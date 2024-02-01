@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
 
-project(systematicstools VERSION 02.00.00 LANGUAGES CXX)
+project(systematicstools VERSION 02.00.01 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ Standard to use when compiling")
 
