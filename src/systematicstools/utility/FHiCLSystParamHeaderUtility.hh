@@ -3,6 +3,7 @@
 #include "systematicstools/utility/exceptions.hh"
 #include "fhiclcpp/fwd.h"
 
+#include <cstdint>
 #include <string>
 
 namespace systtools {

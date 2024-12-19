@@ -107,6 +107,16 @@ public:
   /// parameters before and after the call.
   bool ConfigureFromParameterHeaders(fhicl::ParameterSet const &ps);
 
+  /// \brief Override the stored configuration for a parameter's variations.
+  ///
+  /// Most useful if/when a downstream user wants to specify specific variations
+  /// in the process of a programmatic study, where those variations weren't known
+  /// at the time of configuration.  (See, e.g., NuSystematics/IGENIESystParamaterTool)
+  void OverrideVariations(paramId_t param, std::vector<double> const & vals)
+  {
+    GetParam(fSystMetaData, param).paramVariations = vals;
+  }
+
   //==== return 1-filled event_unit_response_t
   systtools::event_unit_response_t GetDefaultEventResponse() const;
 
