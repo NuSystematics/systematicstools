@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <regex>
 
 namespace systtools {
 
@@ -126,6 +127,40 @@ inline std::string str_replace(std::string const &inp, std::string const &from,
     prevOccurence = nextOccurence + from.size();
   }
   return ss.str();
+}
+
+// Expand $VAR or ${VAR} in the string
+inline std::string expand_env_vars(const std::string& input) {
+  static const std::regex env_pattern(R"(\$([A-Za-z_][A-Za-z0-9_]*)|\$\{([^}]+)\})");
+  std::string result;
+  result.reserve(input.size());
+
+  std::sregex_iterator it(input.begin(), input.end(), env_pattern);
+  std::sregex_iterator end;
+  size_t last_pos = 0;
+  for (; it != end; ++it) {
+    size_t match_pos = it->position();
+    size_t match_len = it->length();
+
+    // Append text before the match
+    result.append(input, last_pos, match_pos - last_pos);
+
+    // Extract variable name (either group 1 or group 2 matched)
+    std::string var_name = (*it)[1].matched ? (*it)[1].str() : (*it)[2].str();
+
+    const char* val = std::getenv(var_name.c_str());
+    if (!val) {
+      throw std::runtime_error("Environment variable " + var_name + " not set");
+    }
+    result.append(val);
+
+    last_pos = match_pos + match_len;
+  }
+
+  // Append any remaining text after the last match
+  result.append(input, last_pos, std::string::npos);
+
+  return result;
 }
 
 } // namespace systtools
