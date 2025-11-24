@@ -74,6 +74,7 @@ bool ParseFHiCLVariationDescriptor(fhicl::ParameterSet const &paramset,
                "{sigma_low_natural_units, sigma_up_natural_units}.";
       }
       hdr.isRandomlyThrown = true;
+      hdr.isSplineable = false;
     } else {
       throw invalid_FHiCL_variation_descriptor()
           << "[ERROR]: Found tweak definition " << std::quoted(var_descriptor)
@@ -176,6 +177,12 @@ bool ParseFhiclToolConfigurationParameter(
   if (!ParseFHiCLVariationDescriptor(paramset, CV_key, Tweak_key, hdr)) {
     return false;
   }
+
+  // override isSplinable if specified
+  if( paramset.has_key(parameter_name + "_isSplineable") ) {
+    hdr.isSplineable = paramset.get<bool>(parameter_name + "_isSplineable");
+  }
+
 
   hdr.prettyName = parameter_name;
 
