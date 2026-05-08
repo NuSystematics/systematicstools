@@ -88,7 +88,7 @@ bool ParseFHiCLVariationDescriptor(fhicl::ParameterSet const &paramset,
     if (!hdr.isRandomlyThrown) {
       if (hdr.paramVariations.size() == 1) {
         hdr.centralParamValue = hdr.paramVariations.front();
-        hdr.paramVariations.clear();
+        //hdr.paramVariations.clear();
         hdr.isCorrection = true;
       } else if (!hdr.paramVariations.size()) {
         throw invalid_FHiCL_variation_descriptor()

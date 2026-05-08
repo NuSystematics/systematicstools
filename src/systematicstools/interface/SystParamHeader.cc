@@ -32,16 +32,6 @@ bool Validate(SystParamHeader const &hdr, bool quiet) {
       }
       return false;
     }
-    if (hdr.paramVariations.size() || hdr.responses.size()) {
-      if (!quiet) {
-        std::cout << "[ERROR]: SystParamHeader(" << hdr.systParamId << ":"
-                  << std::quoted(hdr.prettyName)
-                  << ") is marked as a correction but has variations ("
-                  << hdr.paramVariations.size() << ") or responses ("
-                  << hdr.responses.size() << ")" << std::endl;
-      }
-      return false;
-    }
   } else {
     if (!hdr.paramVariations.size()) {
       if (!quiet) {
