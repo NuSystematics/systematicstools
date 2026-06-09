@@ -33,6 +33,7 @@ bool ParseFHiCLVariationDescriptor(fhicl::ParameterSet const &paramset,
 
   trim(var_descriptor);
 
+  // 1) When "variation_descriptor" is provided
   if (var_descriptor.size()) {
     char fchar = var_descriptor.front();
     std::string var_descriptor_trimmed =
@@ -83,12 +84,16 @@ bool ParseFHiCLVariationDescriptor(fhicl::ParameterSet const &paramset,
              "2, spline knot 3,...]\"";
     }
 
-    // If there is only one variation, set it as the central value correction
-    // instead.
+    // If there is only one variation, set isCorrection to true.
+    // Also, if RW(CV) is not 1.0, it should be included in variation_descriptor,
+    // so the systprovider can calculate that non-1.0 reweight.
+    // So when RW(CV) is not 1.0 and we want a correction to another value (Alt),
+    // we need variation_descriptor: [CV, Alt].
+    // This means when we have only one variation, this means RW(CV) is 1.0, and no need to evaluate RW(CV) separately
     if (!hdr.isRandomlyThrown) {
       if (hdr.paramVariations.size() == 1) {
+        // Because of the reason above, we can safely set central value to the given single variation value
         hdr.centralParamValue = hdr.paramVariations.front();
-        //hdr.paramVariations.clear();
         hdr.isCorrection = true;
       } else if (!hdr.paramVariations.size()) {
         throw invalid_FHiCL_variation_descriptor()
@@ -96,8 +101,26 @@ bool ParseFHiCLVariationDescriptor(fhicl::ParameterSet const &paramset,
             << ", failed to determine any parameter variations.";
       }
     }
-  } else { // Just use the central value every time
+  }
+  // 2) When "variation_descriptor" is NOT provided;
+  //    E.g., only central_value is given
+  else {
+    if(!has_cv){
+
+      // We already have 
+      //   if (!has_cv && !has_var) {
+      //    return false;
+      //  }
+      // , so this won't happen, but for safety..
+      throw invalid_FHiCL_variation_descriptor()
+            << "[ERROR]: Neither variation_descriptor nor central_value is provided";
+    }
+
+    // Set isCorrection to true
     hdr.isCorrection = true;
+    // Let's still fill paramVariations with the central value
+    hdr.paramVariations.clear();
+    hdr.paramVariations.push_back( hdr.centralParamValue );
   }
   return true;
 }
