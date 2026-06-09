@@ -141,6 +141,7 @@ void ISystProviderTool::CheckHaveMetaData(paramId_t i) const{
 ParamResponses
 responses_for(SystParamHeader const& sph)
 {
+  // Backward compatibility; isCorrection header used to have empty paramVariations
   if (sph.isCorrection) {
     return {sph.systParamId, std::vector<double>{1.}};
   }
