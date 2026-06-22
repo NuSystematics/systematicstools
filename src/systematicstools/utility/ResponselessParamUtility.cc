@@ -22,7 +22,7 @@ void FinalizeAndValidateDependentParameters(
     if (HasParam(metadata, param_name)) {
       SystParamHeader const &hdr = GetParam(metadata, param_name);
       if (NVariations && (NVariations != hdr.paramVariations.size())) {
-        throw invalid_ToolConfigurationFHiCL()
+        throw invalid_ToolConfigurationYAML()
             << "[ERROR]: Parameter " << std::quoted(param_name)
             << " configured with " << hdr.paramVariations.size()
             << " variations, but another responseless parameter with the "

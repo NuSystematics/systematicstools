@@ -1,12 +1,12 @@
 #pragma once
 
 #include "systematicstools/interface/EventResponse_product.hh"
-#include "systematicstools/interface/FHiCLSystParamHeaderConverters.hh"
+#include "systematicstools/interface/YAMLSystParamHeaderConverters.hh"
 #include "systematicstools/interface/SystMetaData.hh"
 
 #include "systematicstools/utility/exceptions.hh"
 
-#include "fhiclcpp/ParameterSet.h"
+#include "yaml-cpp/yaml.h"
 
 #include <iomanip>
 #include <iostream>
@@ -19,14 +19,14 @@ NEW_SYSTTOOLS_EXCEPT(ISystProviderTool_method_unimplemented);
 NEW_SYSTTOOLS_EXCEPT(ISystProviderTool_seed_suggestion_post_configure);
 NEW_SYSTTOOLS_EXCEPT(ISystProviderTool_noncontiguous_parameter_Ids);
 NEW_SYSTTOOLS_EXCEPT(ISystProviderTool_metadata_not_generated);
-NEW_SYSTTOOLS_EXCEPT(invalid_ToolConfigurationFHiCL);
+NEW_SYSTTOOLS_EXCEPT(invalid_ToolConfigurationYAML);
 NEW_SYSTTOOLS_EXCEPT(invalid_ToolOptions);
 
 /// ABC defining the interface to systematic response syst_providers
 class ISystProviderTool {
 public:
 
-  ISystProviderTool(fhicl::ParameterSet const &ps);
+  ISystProviderTool(YAML::Node const &yamlnd);
 
   ///\brief Check if instance handles parameter
   ///
@@ -65,23 +65,23 @@ public:
                                       bool Check = false);
 
   ///\brief Sub-classes may override this method to provide an example Tool
-  /// Configuration FHiCL document.
-  virtual fhicl::ParameterSet GetExampleToolConfiguration() {
-    fhicl::ParameterSet ex_cfg;
-    ex_cfg.put<std::string>("tool_type", GetToolType());
+  /// Configuration YAML document.
+  virtual YAML::Node GetExampleToolConfiguration() {
+    YAML::Node ex_cfg;
+    ex_cfg["tool_type"] = GetToolType();
     return ex_cfg;
   }
 
-  ///\brief Configure an ISystProvider instance with tool-specific FHiCL
+  ///\brief Configure an ISystProvider instance with tool-specific YAML
   ///
-  /// Takes the tool-specific FHiCL configuration and the paramId_t of the first
+  /// Takes the tool-specific YAML configuration and the paramId_t of the first
   /// unused paramId_t (closest to 0) and builds the parameter metadata that can
   /// be used to configure the ISystProvider for response calculation and also
   /// interpret the calculated responses.
   ///
   /// Validates that the SystParamHeaders created by the subclass in
   /// `BuildSystMetaData` are contiguous.
-  void ConfigureFromToolConfig(fhicl::ParameterSet const &ps,
+  void ConfigureFromToolConfig(YAML::Node const &yamlnd,
                                paramId_t firstId);
 
   ///\brief Gets the currently configured set of systematic parameter headers.
@@ -90,22 +90,22 @@ public:
   /// which throws if they haven't.
   SystMetaData const &GetSystMetaData() const;
 
-  ///\brief Build the Parameter Headers FHiCL document that can be used to
+  ///\brief Build the Parameter Headers YAML document that can be used to
   /// re-configure an instance of this tool via ConfigureFromParameterHeaders
   ///
   /// If a sub-class requires extra configuration options they should be exposed
   /// through GetExtraToolOptions
-  fhicl::ParameterSet GetParameterHeadersDocument();
+  YAML::Node GetParameterHeadersDocument();
 
-  ///\brief Try and read parameter configuration from input fhicl file.
+  ///\brief Try and read parameter configuration from input YAML node.
   ///
   /// After reading parameters, the pure virtual SetupResponseCalculator method
   /// is called for any final subclass configuration.
   ///
   ///\note Sub-classes may not alter fSystMetaData during the configure call.
-  /// This is checked for by md5-ing the stringified fhicl representation of the
+  /// This is checked for by md5-ing the stringified YAML representation of the
   /// parameters before and after the call.
-  bool ConfigureFromParameterHeaders(fhicl::ParameterSet const &ps);
+  bool ConfigureFromParameterHeaders(YAML::Node const &yamlnd);
 
   /// \brief Override the stored configuration for a parameter's variations.
   ///
@@ -131,17 +131,15 @@ public:
   virtual ~ISystProviderTool(){};
 
 protected:
-  ///\brief Convert tool-specific configuration fhicl parameter set into generic
+  ///\brief Convert tool-specific configuration YAML parameter set into generic
   /// SystParamHeaders.
-  virtual SystMetaData BuildSystMetaData(fhicl::ParameterSet const &,
+  virtual SystMetaData BuildSystMetaData(YAML::Node const &,
                                          paramId_t) = 0;
 
   ///\brief Gets any extra tool options generated during
   /// ConfigureFromToolConfig that aren't de-serializable to the SystParamHeader
   /// format.
-  virtual fhicl::ParameterSet GetExtraToolOptions() {
-    return fhicl::ParameterSet();
-  }
+  virtual YAML::Node GetExtraToolOptions() { return YAML::Node(); }
 
   ///\brief Any further configuration required by a subclass before
   /// GetEventResponse can be called.
@@ -153,7 +151,7 @@ protected:
   /// Configuration returned by GetExtraToolOptions after initial Tool
   /// Configuration will be passed into here during
   /// ConfigureFromParameterHeaders
-  virtual bool SetupResponseCalculator(fhicl::ParameterSet const &) = 0;
+  virtual bool SetupResponseCalculator(YAML::Node const &) = 0;
 
   ///\brief Checks if internal parameter metadata has been generated or loaded
   /// from a Parameter Headers file.

@@ -2,20 +2,22 @@
 
 #include "systematicstools/interface/ISystProviderTool.hh"
 
+#include "yaml-cpp/yaml.h"
+
 #include <memory>
 #include <random>
 #include <string>
 
 class ExampleISystProvider : public systtools::ISystProviderTool {
 public:
-  explicit ExampleISystProvider(fhicl::ParameterSet const &);
+  explicit ExampleISystProvider(YAML::Node const &);
 
-  systtools::SystMetaData BuildSystMetaData(fhicl::ParameterSet const &,
-                                          systtools::paramId_t);
-  fhicl::ParameterSet GetExtraToolOptions();
-  bool SetupResponseCalculator(fhicl::ParameterSet const &);
+  systtools::SystMetaData BuildSystMetaData(YAML::Node const &,
+                                          systtools::paramId_t) override;
+  YAML::Node GetExtraToolOptions() override;
+  bool SetupResponseCalculator(YAML::Node const &) override;
 
-  std::string AsString();
+  std::string AsString() override;
 
 private:
   bool applyToAll;

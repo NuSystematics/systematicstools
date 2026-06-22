@@ -1,19 +1,18 @@
 #include "systematicstools/systproviders/ExampleISystProvider_tool.hh"
 
-#include "systematicstools/utility/FHiCLSystParamHeaderUtility.hh"
+#include "systematicstools/utility/YAMLSystParamHeaderUtility.hh"
 
 #include "systematicstools/utility/printers.hh"
 #include "systematicstools/utility/string_parsers.hh"
 
 using namespace systtools;
-using namespace fhicl;
 
 // 1 sigma = 5% normalisation uncertainty by default.
 double default_centralvalue_nu = 1;
 double default_lowsigmavalue_nu = 5;
 double default_upsigmavalue_nu = 5;
 
-ExampleISystProvider::ExampleISystProvider(ParameterSet const &params)
+ExampleISystProvider::ExampleISystProvider(YAML::Node const &params)
     : ISystProviderTool(params), RNgine{nullptr}, RNJesus{nullptr} {}
 
 double GetNormResponse(double param_val_nu) { return 1 + param_val_nu * 0.01; }
@@ -43,8 +42,7 @@ double GetResponse_shift(double shift_sigma, SystParamHeader const &sph) {
 }
 
 double GetResponse(double val, SystParamHeader const &sph) {
-  return sph.unitsAreNatural ? GetResponse_nu(val, sph)
-                             : GetResponse_shift(val, sph);
+  return sph.unitsAreNatural ? GetResponse_nu(val, sph) : GetResponse_shift(val, sph);
 }
 
 std::string ExampleISystProvider::AsString() {
@@ -52,7 +50,7 @@ std::string ExampleISystProvider::AsString() {
   return to_str(GetSystMetaData().front());
 }
 
-SystMetaData ExampleISystProvider::BuildSystMetaData(ParameterSet const &params,
+SystMetaData ExampleISystProvider::BuildSystMetaData(YAML::Node const &params,
                                                      paramId_t firstParamId) {
 
   std::cout << "[INFO]: Configuring ExampleISystProvider" << std::endl;
@@ -62,19 +60,19 @@ SystMetaData ExampleISystProvider::BuildSystMetaData(ParameterSet const &params,
   sph.systParamId = firstParamId;
 
   bool isLateral = false;
-  params.get_if_present("provide_lateral", isLateral);
+  if (params["provide_lateral"]) isLateral = params["provide_lateral"].as<bool>();
   sph.isWeightSystematicVariation = !isLateral;
   bool isGlobal = false;
-  params.get_if_present("is_global", isGlobal);
+  if (params["is_global"]) isGlobal = params["is_global"].as<bool>();
   sph.differsEventByEvent = !isGlobal;
-  params.get_if_present("use_natural_units", sph.unitsAreNatural);
+  if (params["use_natural_units"]) sph.unitsAreNatural = params["use_natural_units"].as<bool>();
 
   sph.centralParamValue = ::default_centralvalue_nu;
 
-  params.get_if_present("apply_to_all", applyToAll);
+  if (params["apply_to_all"]) applyToAll = params["apply_to_all"].as<bool>();
 
-  if (params.has_key("param_name")) {
-    sph.prettyName = params.get<std::string>("param_name");
+  if (params["param_name"]) {
+    sph.prettyName = params["param_name"].as<std::string>();
   } else {
     sph.prettyName = "ExampleSystTools";
     sph.prettyName += std::string(isGlobal ? "Global" : "EventByEvent") +
@@ -82,22 +80,18 @@ SystMetaData ExampleISystProvider::BuildSystMetaData(ParameterSet const &params,
                       std::string(applyToAll ? "_all" : "_some");
   }
 
-  if (!ParseFHiCLVariationDescriptor(params, "central_value",
+  if (!ParseYAMLVariationDescriptor(params, "central_value",
                                      "variation_descriptor", sph)) {
 
-    if (params.has_key("number_of_throws")) {
+    if (params["number_of_throws"]) {
       sph.isRandomlyThrown = true;
     } else {
-      throw invalid_ToolConfigurationFHiCL()
-          << "[ERROR]: Tool configuration: { " << params.to_indented_string()
-          << " } did not contain enough information to configure. See "
-             "systematicstools/systproviders/ExampleISystProviderTool.hh for "
-             "minimal "
-             "configuration.";
+      throw invalid_ToolConfigurationYAML()
+          << "[ERROR]: Tool configuration did not contain enough information to configure. See systematicstools/systproviders/ExampleISystProviderTool.hh for minimal configuration.";
     }
   }
 
-  MakeFHiCLDefinedRandomVariations(params, "number_of_throws", sph, "rand_dist",
+  MakeYAMLDefinedRandomVariations(params, "number_of_throws", sph, "rand_dist",
                                    fSeedSuggestion);
 
   if (!sph.differsEventByEvent) {
@@ -110,18 +104,18 @@ SystMetaData ExampleISystProvider::BuildSystMetaData(ParameterSet const &params,
   return SystMetaData{{sph}};
 }
 
-ParameterSet ExampleISystProvider::GetExtraToolOptions() {
-  ParameterSet options;
-  options.put("apply_to_all", applyToAll);
+YAML::Node ExampleISystProvider::GetExtraToolOptions() {
+  YAML::Node options;
+  options["apply_to_all"] = applyToAll;
   return options;
 }
 
 bool ExampleISystProvider::SetupResponseCalculator(
-    ParameterSet const &options) {
+    YAML::Node const &options) {
 
   CheckHaveMetaData();
 
-  applyToAll = options.get<bool>("apply_to_all");
+  if (options["apply_to_all"]) applyToAll = options["apply_to_all"].as<bool>();
 
   if (!applyToAll && !RNJesus) {
     RNgine = std::make_unique<std::mt19937_64>(0);

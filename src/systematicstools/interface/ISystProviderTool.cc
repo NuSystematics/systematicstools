@@ -2,14 +2,14 @@
 
 namespace systtools {
 
-ISystProviderTool::ISystProviderTool(fhicl::ParameterSet const &ps)
-    : fToolType{ps.get<std::string>("tool_type")}, fSeedSuggestion{0},
+ISystProviderTool::ISystProviderTool(YAML::Node const &yamlnd)
+    : fToolType{yamlnd["tool_type"].as<std::string>()}, fSeedSuggestion{0},
       fIsFullyConfigured{false}, fHaveSystMetaData{false} {
-  if (!ps.has_key("instance_name")) {
+  if (!yamlnd["instance_name"]) {
     fInstanceName = "";
     fFQName = fToolType;
   } else {
-    fInstanceName = ps.get<std::string>("instance_name");
+    fInstanceName = yamlnd["instance_name"].as<std::string>();
     fFQName = fToolType + "_" + fInstanceName;
   }
 }
@@ -35,9 +35,9 @@ void ISystProviderTool::SuggestParameterThrows(parameter_throws_list_t &&,
       << ", but it doesn't handle suggested throws.";
 }
 
-void ISystProviderTool::ConfigureFromToolConfig(fhicl::ParameterSet const &ps,
+void ISystProviderTool::ConfigureFromToolConfig(YAML::Node const &yamlnd,
                                                 paramId_t firstId) {
-  fSystMetaData = this->BuildSystMetaData(ps, firstId);
+  fSystMetaData = this->BuildSystMetaData(yamlnd, firstId);
 
   // The following check expects them to be ordered, but the provider isn't
   // under any obligation to order them.
@@ -63,42 +63,57 @@ SystMetaData const &ISystProviderTool::GetSystMetaData() const{
   return fSystMetaData;
 }
 
-fhicl::ParameterSet ISystProviderTool::GetParameterHeadersDocument() {
+YAML::Node ISystProviderTool::GetParameterHeadersDocument() {
 
   CheckHaveMetaData();
 
-  fhicl::ParameterSet ParamHeadersDoc;
+  YAML::Node ParamHeadersDoc;
   std::vector<std::string> HeaderKeys;
   for (auto &hdr : GetSystMetaData()) {
-    ParamHeadersDoc.put(hdr.prettyName, SystParamHeaderToFHiCL(hdr));
+    ParamHeadersDoc[hdr.prettyName] = SystParamHeaderToYAML(hdr);
     HeaderKeys.push_back(hdr.prettyName);
   }
-  ParamHeadersDoc.put("parameter_headers", HeaderKeys);
-  ParamHeadersDoc.put("tool_type", GetToolType());
+  ParamHeadersDoc["parameter_headers"] = HeaderKeys;
+  ParamHeadersDoc["tool_type"] = GetToolType();
   if (GetInstanceName().size()) {
-    ParamHeadersDoc.put("instance_name", GetInstanceName());
+    ParamHeadersDoc["instance_name"] = GetInstanceName();
   }
-  fhicl::ParameterSet ToolOptions = GetExtraToolOptions();
-  if (!ToolOptions.is_empty()) {
-    ParamHeadersDoc.put("tool_options", ToolOptions);
+
+  YAML::Node ToolOptions = GetExtraToolOptions();
+  if (ToolOptions && !ToolOptions.IsNull()) {
+    ParamHeadersDoc["tool_options"] = ToolOptions;
   }
 
   return ParamHeadersDoc;
 }
 
 bool ISystProviderTool::ConfigureFromParameterHeaders(
-    fhicl::ParameterSet const &ps) {
-  std::vector<std::string> const &ParamHeaderNames =
-      ps.get<std::vector<std::string>>("parameter_headers");
-
-  for (auto const &paramName : ParamHeaderNames) {
-    fSystMetaData.emplace_back(
-        FHiCLToSystParamHeader(ps.get<fhicl::ParameterSet>(paramName)));
+    YAML::Node const &yamlnd) {
+  if (!yamlnd["parameter_headers"]) {
+    throw invalid_ToolConfigurationYAML()
+        << "[ERROR]: Expected key 'parameter_headers' in YAML parameter headers.";
   }
+
+  YAML::Node ph_names = yamlnd["parameter_headers"];
+  if (!ph_names.IsSequence()) {
+    throw invalid_ToolConfigurationYAML()
+        << "[ERROR]: 'parameter_headers' must be a YAML sequence of names.";
+  }
+
+  for (auto const &nameNode : ph_names) {
+    std::string paramName = nameNode.as<std::string>();
+    if (!yamlnd[paramName]) {
+      throw invalid_ToolConfigurationYAML()
+          << "[ERROR]: Parameter header '" << std::quoted(paramName)
+          << "' referenced in 'parameter_headers' but not found.";
+    }
+    fSystMetaData.emplace_back(YAMLToSystParamHeader(yamlnd[paramName]));
+  }
+
   fHaveSystMetaData = true;
 
-  fhicl::ParameterSet ToolOptions;
-  ps.get_if_present("tool_options", ToolOptions);
+  YAML::Node ToolOptions;
+  if (yamlnd["tool_options"]) ToolOptions = yamlnd["tool_options"];
 
   fIsFullyConfigured = this->SetupResponseCalculator(ToolOptions);
 

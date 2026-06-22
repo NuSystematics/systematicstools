@@ -1,11 +1,11 @@
-#include "systematicstools/utility/FHiCLSystParamHeaderUtility.hh"
+#include "systematicstools/utility/YAMLSystParamHeaderUtility.hh"
 
 #include "systematicstools/utility/string_parsers.hh"
 
 #include "systematicstools/interface/SystMetaData.hh"
 #include "systematicstools/interface/types.hh"
 
-#include "fhiclcpp/ParameterSet.h"
+#include "yaml-cpp/yaml.h"
 
 #include <chrono>
 #include <functional>
@@ -16,20 +16,20 @@
 
 namespace systtools {
 
-bool ParseFHiCLVariationDescriptor(fhicl::ParameterSet const &paramset,
-                                   std::string const &CV_key,
-                                   std::string const &vardescriptor_key,
-                                   SystParamHeader &hdr) {
-  bool has_cv = paramset.has_key(CV_key);
-  bool has_var = paramset.has_key(vardescriptor_key);
+bool ParseYAMLVariationDescriptor(YAML::Node const &yamlnd,
+                                  std::string const &CV_key,
+                                  std::string const &vardescriptor_key,
+                                  SystParamHeader &hdr) {
+  bool has_cv = static_cast<bool>(yamlnd[CV_key]);
+  bool has_var = static_cast<bool>(yamlnd[vardescriptor_key]);
 
   if (!has_cv && !has_var) {
     return false;
   }
 
-  paramset.get_if_present(CV_key, hdr.centralParamValue);
+  if (has_cv) hdr.centralParamValue = yamlnd[CV_key].as<double>();
   std::string var_descriptor;
-  paramset.get_if_present(vardescriptor_key, var_descriptor);
+  if (has_var) var_descriptor = yamlnd[vardescriptor_key].as<std::string>();
 
   trim(var_descriptor);
 
@@ -43,7 +43,7 @@ bool ParseFHiCLVariationDescriptor(fhicl::ParameterSet const &paramset,
       std::vector<double> range_step_values =
           ParseToVect<double>(var_descriptor_trimmed, ",");
       if (range_step_values.size() != 3) {
-        throw invalid_FHiCL_variation_descriptor()
+        throw invalid_YAML_variation_descriptor()
             << "[ERROR]: When parsing spline knot descriptor found "
             << std::quoted(var_descriptor_trimmed)
             << ", but the descriptor must be in the format: "
@@ -68,7 +68,7 @@ bool ParseFHiCLVariationDescriptor(fhicl::ParameterSet const &paramset,
         hdr.oneSigmaShifts[0] = sigShifts.front();
         hdr.oneSigmaShifts[1] = sigShifts.back();
       } else {
-        throw invalid_FHiCL_variation_descriptor()
+        throw invalid_YAML_variation_descriptor()
             << "[ERROR]: When parsing sigma shifts found "
             << std::quoted(var_descriptor_trimmed)
             << ", but expected {sigma_both_natural_units}, or "
@@ -77,26 +77,19 @@ bool ParseFHiCLVariationDescriptor(fhicl::ParameterSet const &paramset,
       hdr.isRandomlyThrown = true;
       hdr.isSplineable = false;
     } else {
-      throw invalid_FHiCL_variation_descriptor()
+      throw invalid_YAML_variation_descriptor()
           << "[ERROR]: Found tweak definition " << std::quoted(var_descriptor)
           << ", but expected to find either, \"{sigma_low_natural_units, "
              "sigma_up_natural_units}\" or \"[spline knot 1, spline knot "
              "2, spline knot 3,...]\"";
     }
 
-    // If there is only one variation, set isCorrection to true.
-    // Also, if RW(CV) is not 1.0, it should be included in variation_descriptor,
-    // so the systprovider can calculate that non-1.0 reweight.
-    // So when RW(CV) is not 1.0 and we want a correction to another value (Alt),
-    // we need variation_descriptor: [CV, Alt].
-    // This means when we have only one variation, this means RW(CV) is 1.0, and no need to evaluate RW(CV) separately
     if (!hdr.isRandomlyThrown) {
       if (hdr.paramVariations.size() == 1) {
-        // Because of the reason above, we can safely set central value to the given single variation value
         hdr.centralParamValue = hdr.paramVariations.front();
         hdr.isCorrection = true;
       } else if (!hdr.paramVariations.size()) {
-        throw invalid_FHiCL_variation_descriptor()
+        throw invalid_YAML_variation_descriptor()
             << "[ERROR]: When parsing " << var_descriptor
             << ", failed to determine any parameter variations.";
       }
@@ -106,35 +99,27 @@ bool ParseFHiCLVariationDescriptor(fhicl::ParameterSet const &paramset,
   //    E.g., only central_value is given
   else {
     if(!has_cv){
-
-      // We already have 
-      //   if (!has_cv && !has_var) {
-      //    return false;
-      //  }
-      // , so this won't happen, but for safety..
-      throw invalid_FHiCL_variation_descriptor()
+      throw invalid_YAML_variation_descriptor()
             << "[ERROR]: Neither variation_descriptor nor central_value is provided";
     }
 
-    // Set isCorrection to true
     hdr.isCorrection = true;
-    // Let's still fill paramVariations with the central value
     hdr.paramVariations.clear();
     hdr.paramVariations.push_back( hdr.centralParamValue );
   }
   return true;
 }
 
-bool MakeFHiCLDefinedRandomVariations(fhicl::ParameterSet const &paramset,
-                                      std::string const &nthrows_key,
-                                      SystParamHeader &hdr,
-                                      std::string const &distribution_key,
-                                      uint64_t seed, size_t NThrows) {
+bool MakeYAMLDefinedRandomVariations(YAML::Node const &yamlnd,
+                                    std::string const &nthrows_key,
+                                    SystParamHeader &hdr,
+                                    std::string const &distribution_key,
+                                    uint64_t seed, size_t NThrows) {
   if (!hdr.isRandomlyThrown) {
     return false;
   }
 
-  paramset.get_if_present<size_t>(nthrows_key, NThrows);
+  if (yamlnd[nthrows_key]) NThrows = yamlnd[nthrows_key].as<size_t>();
 
   if (!NThrows) {
     return false;
@@ -148,8 +133,8 @@ bool MakeFHiCLDefinedRandomVariations(fhicl::ParameterSet const &paramset,
   std::function<double()> RNJesus;
 
   // Choose distribution
-  if (distribution_key.size() && paramset.has_key(distribution_key)) {
-    std::string dist_ident = paramset.get<std::string>(distribution_key);
+  if (distribution_key.size() && yamlnd[distribution_key]) {
+    std::string dist_ident = yamlnd[distribution_key].as<std::string>();
 
     if ((dist_ident == "normal") || (dist_ident == "gaussian")) {
       std::normal_distribution<double> distribution(0, 1);
@@ -175,44 +160,40 @@ bool MakeFHiCLDefinedRandomVariations(fhicl::ParameterSet const &paramset,
   return true;
 }
 
-bool FhiclToolConfigurationParameterExists(
-    fhicl::ParameterSet const &paramset, std::string const &parameter_name) {
+bool YAMLToolConfigurationParameterExists(
+    YAML::Node const &yamlnd, std::string const &parameter_name) {
 
   std::string CV_key = parameter_name + "_central_value";
   std::string Tweak_key = parameter_name + "_variation_descriptor";
 
-  bool has_cv = paramset.has_key(CV_key);
-  bool has_var = paramset.has_key(Tweak_key);
+  bool has_cv = static_cast<bool>(yamlnd[CV_key]);
+  bool has_var = static_cast<bool>(yamlnd[Tweak_key]);
 
-  if (has_cv || has_var) {
-    return true;
-  }
-  return false;
+  return (has_cv || has_var);
 }
 
-bool ParseFhiclToolConfigurationParameter(
-    fhicl::ParameterSet const &paramset, std::string const &parameter_name,
+bool ParseYAMLToolConfigurationParameter(
+    YAML::Node const &yamlnd, std::string const &parameter_name,
     SystParamHeader &hdr, uint64_t seed, size_t NThrows) {
 
   std::string CV_key = parameter_name + "_central_value";
   std::string Tweak_key = parameter_name + "_variation_descriptor";
 
-  if (!ParseFHiCLVariationDescriptor(paramset, CV_key, Tweak_key, hdr)) {
+  if (!ParseYAMLVariationDescriptor(yamlnd, CV_key, Tweak_key, hdr)) {
     return false;
   }
 
-  // override isSplinable if specified
-  if( paramset.has_key(parameter_name + "_isSplineable") ) {
-    hdr.isSplineable = paramset.get<bool>(parameter_name + "_isSplineable");
+  // override isSplineable if specified
+  if( yamlnd[parameter_name + "_isSplineable"] ) {
+    hdr.isSplineable = yamlnd[parameter_name + "_isSplineable"].as<bool>();
   }
-
 
   hdr.prettyName = parameter_name;
 
   std::string NThrows_key = parameter_name + "_nthrows";
   std::string RandDist_key = parameter_name + "_random_distribution";
 
-  MakeFHiCLDefinedRandomVariations(paramset, NThrows_key, hdr, RandDist_key,
+  MakeYAMLDefinedRandomVariations(yamlnd, NThrows_key, hdr, RandDist_key,
                                    seed, NThrows);
 
   return true;

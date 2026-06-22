@@ -1,6 +1,6 @@
 #include "systematicstools/utility/ParameterAndProviderConfigurationUtility.hh"
 
-#include "systematicstools/interface/FHiCLSystParamHeaderConverters.hh"
+#include "systematicstools/interface/YAMLSystParamHeaderConverters.hh"
 
 #include <iomanip>
 #include <iostream>
@@ -9,28 +9,28 @@
 
 namespace systtools {
 
-param_header_map_t BuildParameterHeaders(fhicl::ParameterSet const &paramset,
+param_header_map_t BuildParameterHeaders(YAML::Node const &paramset,
                                          std::string const &key) {
 
   param_header_map_t headers;
 
   // Foreach provider block
-  auto const &provider_keys = paramset.get<std::vector<std::string>>(key);
-  for (auto const &provkey : provider_keys) {
-    auto const &provider_cfg = paramset.get<fhicl::ParameterSet>(provkey);
+  YAML::Node provider_keys = paramset[key];
+  for (auto const &provkeyNode : provider_keys) {
+    std::string provkey = provkeyNode.as<std::string>();
+    YAML::Node provider_cfg = paramset[provkey];
 
-    std::string provname = provider_cfg.get<std::string>("tool_type");
-    if (provider_cfg.has_key("instance_name")) {
-      provname += "_" + provider_cfg.get<std::string>("instance_name");
+    std::string provname = provider_cfg["tool_type"].as<std::string>();
+    if (provider_cfg["instance_name"]) {
+      provname += "_" + provider_cfg["instance_name"].as<std::string>();
     }
 
-    std::vector<std::string> const &ParameterHeaderKeyNames =
-        provider_cfg.get<std::vector<std::string>>("parameter_headers");
+    YAML::Node ParameterHeaderKeyNames = provider_cfg["parameter_headers"];
 
     // Foreach handled parameter block
-    for (auto const &ParamHeaderKey : ParameterHeaderKeyNames) {
-      SystParamHeader hdr = FHiCLToSystParamHeader(
-          provider_cfg.get<fhicl::ParameterSet>(ParamHeaderKey));
+    for (auto const &ParamHeaderKeyNode : ParameterHeaderKeyNames) {
+      std::string ParamHeaderKey = ParamHeaderKeyNode.as<std::string>();
+      SystParamHeader hdr = YAMLToSystParamHeader(provider_cfg[ParamHeaderKey]);
 
       // Check that this unique Id hasn't been used before.
       if (headers.find(hdr.systParamId) != headers.end()) {

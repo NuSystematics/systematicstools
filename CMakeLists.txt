@@ -27,6 +27,16 @@ include(CPM)
 
 find_package(ROOT 6.10 REQUIRED)
 
+# YAML
+find_package(yaml-cpp REQUIRED)
+
+#set( CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules )
+#if( DEFINED $YAMLCPP_DIR )
+#  message(STATUS "Setting yaml-cpp hint to ${YAMLCPP_DIR}." )
+#  set( YAMLCPP_INSTALL_DIR ${YAMLCPP_DIR} )
+#endif()
+#find_package( YAMLCPP REQUIRED HINTS ${YAMLCPP_DIR} )
+
 ## Check if we have fhiclcpp from ups
 find_package(fhiclcpp QUIET)
 if(NOT fhiclcpp_FOUND)
@@ -40,7 +50,9 @@ endif()
 ###### Compiler set up
 add_library(systematicstools_dependencies INTERFACE)
 target_link_libraries(systematicstools_dependencies INTERFACE 
-  fhiclcpp::standalone)
+  fhiclcpp::standalone
+  yaml-cpp::yaml-cpp)
+
 target_include_directories(systematicstools_dependencies INTERFACE 
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
   $<INSTALL_INTERFACE:include> )

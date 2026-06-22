@@ -1,15 +1,17 @@
 ####### Util library
 
 SET(UTIL_IMPLFILES
-  FHiCLSystParamHeaderUtility.cc
+  YAMLSystParamHeaderUtility.cc
   ParameterAndProviderConfigurationUtility.cc
   ResponselessParamUtility.cc
+  ConfigConverter.cc
   md5.cc)
 
 SET(UTIL_HDRFILES
-  FHiCLSystParamHeaderUtility.hh
+  YAMLSystParamHeaderUtility.hh
   ParameterAndProviderConfigurationUtility.hh
   ResponselessParamUtility.hh
+  ConfigConverter.hh
   printers.hh
   ROOTUtility.hh
   string_parsers.hh

@@ -2,14 +2,14 @@
 SET(IFCE_IMPLFILES
   EventResponse_product.cc
   ISystProviderTool.cc
-  FHiCLSystParamHeaderConverters.cc
+  YAMLSystParamHeaderConverters.cc
   SystMetaData.cc
   SystParamHeader.cc)
 
 SET(IFCE_HDRFILES
   EventResponse_product.hh
   ISystProviderTool.hh
-  FHiCLSystParamHeaderConverters.hh
+  YAMLSystParamHeaderConverters.hh
   SystMetaData.hh
   SystParamHeader.hh
   types.hh)

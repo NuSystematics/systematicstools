@@ -1,19 +1,18 @@
 #pragma once
 
 #include "systematicstools/interface/EventResponse_product.hh"
-#include "systematicstools/interface/FHiCLSystParamHeaderConverters.hh"
+#include "systematicstools/interface/YAMLSystParamHeaderConverters.hh"
 #include "systematicstools/interface/SystParamHeader.hh"
-
-#include "fhiclcpp/ParameterSet.h"
+#include "yaml-cpp/yaml.h"
 
 #include <iomanip>
 #include <sstream>
 #include <string>
 
 namespace systtools {
-inline std::string to_str(SystParamHeader const &sph, bool indent = true) {
-  fhicl::ParameterSet ps = SystParamHeaderToFHiCL(sph);
-  return indent ? ps.to_indented_string() : ps.to_string();
+inline std::string to_str(SystParamHeader const &sph, bool /*indent*/ = true) {
+  YAML::Node yaml = SystParamHeaderToYAML(sph);
+  return YAML::Dump(yaml);
 }
 
 inline std::string to_str(EventResponse const &er) {

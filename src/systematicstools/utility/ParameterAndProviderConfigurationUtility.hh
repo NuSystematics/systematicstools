@@ -5,8 +5,7 @@
 #include "systematicstools/interface/types.hh"
 
 #include "systematicstools/utility/exceptions.hh"
-
-#include "fhiclcpp/ParameterSet.h"
+#include "yaml-cpp/yaml.h"
 
 #include <chrono>
 #include <functional>
@@ -21,18 +20,18 @@ namespace systtools {
 NEW_SYSTTOOLS_EXCEPT(ISystProvider_FQName_collision);
 
 ///\brief Builds map of SystProvider instance names and handled parameters from
-/// a ParameterHeaders FHiCL document.
+/// a ParameterHeaders YAML document.
 ///
 /// Used by standalone interpreters to read response interpretation metadata
-/// from input FHiCL
+/// from input FHiCYAMLL
 param_header_map_t
-BuildParameterHeaders(fhicl::ParameterSet const &paramset,
+BuildParameterHeaders(YAML::Node const &paramset,
                       std::string const &key = "syst_providers");
 
 ///\brief Builds map of SystProvider instances and handled parameters from a
 /// set of pre-configured providers
 ///
-/// Avoids reading the same FHiCL twice!
+/// Avoids reading the same YAML twice!
 template <typename T = systtools::ISystProviderTool>
 param_header_map_t BuildParameterHeaders(
     std::vector<std::unique_ptr<T>> const &ConfiguredProviders) {
@@ -53,7 +52,7 @@ param_header_map_t BuildParameterHeaders(
 /// document.
 ///
 /// Some structure over the paramset is neccessary (and is described in
-/// systematicstools/doc/ToolConfiguration.md ), but the FHiCL document passed
+/// systematicstools/doc/ToolConfiguration.md ), but the YAML document passed
 /// to InstanceBuild is tool sub-class-specific. This is as opposed to
 /// ConfigureISystProvidersFromParameterHeaders which requires a rigidly
 /// structure document.
@@ -65,9 +64,9 @@ param_header_map_t BuildParameterHeaders(
 /// art, other instantiators must be used.
 template <typename T = systtools::ISystProviderTool>
 std::vector<std::unique_ptr<T>> ConfigureISystProvidersFromToolConfig(
-    fhicl::ParameterSet const &paramset,
-    std::function<std::unique_ptr<T>(fhicl::ParameterSet const &)> InstanceBuilder,
-    std::string const &key = "syst_providers", paramId_t syst_param_id = 0) {
+  YAML::Node const &paramset,
+  std::function<std::unique_ptr<T>(YAML::Node const &)> InstanceBuilder,
+  std::string const &key = "syst_providers", paramId_t syst_param_id = 0) {
 
   // Instantiate RNGs for seed suggestion.
   std::mt19937_64 generator(
@@ -77,9 +76,9 @@ std::vector<std::unique_ptr<T>> ConfigureISystProvidersFromToolConfig(
 
   std::vector<std::unique_ptr<T>> providers;
 
-  for (auto const &provkey : paramset.get<std::vector<std::string>>(key)) {
-    // Get fhicl config for provider
-    auto const &provider_cfg = paramset.get<fhicl::ParameterSet>(provkey);
+  for (auto const &provkey : paramset[key]) {
+    // Get YAML config for provider
+    YAML::Node provider_cfg = paramset[provkey.as<std::string>()];
 
     // Make an instance of the plugin
     std::unique_ptr<T> is = InstanceBuilder(provider_cfg);
@@ -122,15 +121,15 @@ std::vector<std::unique_ptr<T>> ConfigureISystProvidersFromToolConfig(
 /// art, other instantiators must be used.
 template <typename T = systtools::ISystProviderTool>
 std::vector<std::unique_ptr<T>> ConfigureISystProvidersFromParameterHeaders(
-    fhicl::ParameterSet const &paramset,
-    std::function<std::unique_ptr<T>(fhicl::ParameterSet const &)> InstanceBuilder,
-    std::string const &key = "syst_providers") {
+  YAML::Node const &paramset,
+  std::function<std::unique_ptr<T>(YAML::Node const &)> InstanceBuilder,
+  std::string const &key = "syst_providers") {
 
   std::vector<std::unique_ptr<T>> providers;
 
-  for (auto const &provkey : paramset.get<std::vector<std::string>>(key)) {
-    // Get fhicl config for provider
-    auto const &provider_cfg = paramset.get<fhicl::ParameterSet>(provkey);
+  for (auto const &provkey : paramset[key]) {
+    // Get YAML config for provider
+    YAML::Node provider_cfg = paramset[provkey.as<std::string>()];
 
     // Make an instance of the plugin
     std::unique_ptr<T> is = InstanceBuilder(provider_cfg);
