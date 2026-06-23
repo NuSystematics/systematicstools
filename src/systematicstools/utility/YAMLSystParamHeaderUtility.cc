@@ -108,8 +108,15 @@ bool ParseYAMLVariationDescriptor(YAML::Node const &yamlnd,
              "2, spline knot 3,...]\"";
     }
 
+    // If there is only one variation, set isCorrection to true.
+    // Also, if RW(CV) is not 1.0, it should be included in variation_descriptor,
+    // so the systprovider can calculate that non-1.0 reweight.
+    // So when RW(CV) is not 1.0 and we want a correction to another value (Alt),
+    // we need variation_descriptor: [CV, Alt].
+    // This means when we have only one variation, this means RW(CV) is 1.0, and no need to evaluate RW(CV) separately
     if (!hdr.isRandomlyThrown) {
       if (hdr.paramVariations.size() == 1) {
+        // Because of the reason above, we can safely set central value to the given single variation value
         hdr.centralParamValue = hdr.paramVariations.front();
         hdr.isCorrection = true;
       } else if (!hdr.paramVariations.size()) {
@@ -123,11 +130,18 @@ bool ParseYAMLVariationDescriptor(YAML::Node const &yamlnd,
   //    E.g., only central_value is given
   else {
     if(!has_cv){
+      // We already have 
+      //   if (!has_cv && !has_var) {
+      //    return false;
+      //  }
+      // , so this won't happen, but for safety..
       throw invalid_YAML_variation_descriptor()
             << "[ERROR]: Neither variation_descriptor nor central_value is provided";
     }
 
+    // Set isCorrection to true
     hdr.isCorrection = true;
+    // Let's still fill paramVariations with the central value
     hdr.paramVariations.clear();
     hdr.paramVariations.push_back( hdr.centralParamValue );
   }

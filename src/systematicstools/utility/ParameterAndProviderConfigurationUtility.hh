@@ -23,7 +23,7 @@ NEW_SYSTTOOLS_EXCEPT(ISystProvider_FQName_collision);
 /// a ParameterHeaders YAML document.
 ///
 /// Used by standalone interpreters to read response interpretation metadata
-/// from input FHiCYAMLL
+/// from input YAML
 param_header_map_t
 BuildParameterHeaders(YAML::Node const &paramset,
                       std::string const &key = "syst_providers");
