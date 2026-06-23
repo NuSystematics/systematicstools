@@ -38,7 +38,7 @@ NEW_SYSTTOOLS_EXCEPT(invalid_SystParamHeader);
 /// exposed as data members, but extensibility is provided by the opts data
 /// member which can hold an arbitrary vector of strings.
 ///
-/// This class is currently only serialized to and from FHiCL and as such,
+/// This class is currently only serialized to and from YAML and as such,
 /// adding new/removing/altering members will break usage, but it is fairly easy
 /// to fix in pre-generated parameter sets.
 ///

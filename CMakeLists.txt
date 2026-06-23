@@ -30,21 +30,39 @@ find_package(ROOT 6.10 REQUIRED)
 # YAML
 find_package(yaml-cpp REQUIRED)
 
-## Check if we have fhiclcpp from ups
+# Check if we have fhiclcpp from ups
+option(systtools_BUILD_FHICLCPP "Build fhiclcpp standalone" OFF)
 find_package(fhiclcpp QUIET)
 if(NOT fhiclcpp_FOUND)
   ## Find fhicl_cpp_standalone
-  find_package(fhiclcppstandalone)
-else()
-  ## If found, rename the target to fhiclcpp::standalone
-  add_library(fhiclcpp::standalone ALIAS fhiclcpp::fhiclcpp)
+  message(STATUS "fhiclcpp is not found")
+  if(systtools_BUILD_FHICLCPP)
+    message(STATUS "-Dsysttools_BUILD_FHICLCPP is given, building fhiclcpp standalone")
+    find_package(fhiclcppstandalone)
+    # renaming
+    add_library(fhiclcpp::fhiclcpp ALIAS fhicl_cpp_standalone)
+    set(fhiclcpp_FOUND TRUE)
+  endif()
 endif()
+add_definitions(-DBUILD_INCLUDE_FHICL=${fhiclcpp_FOUND})
 
 ###### Compiler set up
 add_library(systematicstools_dependencies INTERFACE)
-target_link_libraries(systematicstools_dependencies INTERFACE 
-  fhiclcpp::standalone
-  yaml-cpp::yaml-cpp)
+
+if(fhiclcpp_FOUND)
+  target_link_libraries(
+    systematicstools_dependencies
+    INTERFACE
+      fhiclcpp::fhiclcpp
+      yaml-cpp::yaml-cpp
+  )
+else()
+  target_link_libraries(
+    systematicstools_dependencies
+    INTERFACE
+      yaml-cpp::yaml-cpp
+  )
+endif()
 
 target_include_directories(systematicstools_dependencies INTERFACE 
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>

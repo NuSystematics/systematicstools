@@ -4,19 +4,26 @@ SET(UTIL_IMPLFILES
   YAMLSystParamHeaderUtility.cc
   ParameterAndProviderConfigurationUtility.cc
   ResponselessParamUtility.cc
-  ConfigConverter.cc
   md5.cc)
 
 SET(UTIL_HDRFILES
   YAMLSystParamHeaderUtility.hh
   ParameterAndProviderConfigurationUtility.hh
   ResponselessParamUtility.hh
-  ConfigConverter.hh
   printers.hh
   ROOTUtility.hh
   string_parsers.hh
   exceptions.hh
   md5.hh)
+
+if(fhiclcpp_FOUND)
+  LIST(APPEND UTIL_IMPLFILES
+  ConfigConverter.cc
+  )
+  LIST(APPEND UTIL_HDRFILES
+  ConfigConverter.hh
+  )
+endif()
 
 add_library(systematicstools_utility SHARED ${UTIL_IMPLFILES})
 add_library(systtools::utility ALIAS systematicstools_utility)

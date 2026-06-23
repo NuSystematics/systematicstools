@@ -1,11 +1,14 @@
-set(SYSTTOOLS_APPS
-	ConvertFHiCLToYAML)
+if(fhiclcpp_FOUND)
 
-add_executable(ConvertFHiCLToYAML ConvertFHiCLToYAML.cxx)
-target_link_libraries(ConvertFHiCLToYAML PRIVATE
-	systtools::utility
-	systtools::commondeps)
+  set(SYSTTOOLS_APPS
+    ConvertFHiCLToYAML)
 
-install(TARGETS ${SYSTTOOLS_APPS}
-	RUNTIME DESTINATION bin COMPONENT Runtime)
+  add_executable(ConvertFHiCLToYAML ConvertFHiCLToYAML.cxx)
+  target_link_libraries(ConvertFHiCLToYAML PRIVATE
+    systtools::utility
+    systtools::commondeps)
 
+  install(TARGETS ${SYSTTOOLS_APPS}
+    RUNTIME DESTINATION bin COMPONENT Runtime)
+
+endif()
