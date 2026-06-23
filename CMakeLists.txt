@@ -30,13 +30,6 @@ find_package(ROOT 6.10 REQUIRED)
 # YAML
 find_package(yaml-cpp REQUIRED)
 
-#set( CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules )
-#if( DEFINED $YAMLCPP_DIR )
-#  message(STATUS "Setting yaml-cpp hint to ${YAMLCPP_DIR}." )
-#  set( YAMLCPP_INSTALL_DIR ${YAMLCPP_DIR} )
-#endif()
-#find_package( YAMLCPP REQUIRED HINTS ${YAMLCPP_DIR} )
-
 ## Check if we have fhiclcpp from ups
 find_package(fhiclcpp QUIET)
 if(NOT fhiclcpp_FOUND)

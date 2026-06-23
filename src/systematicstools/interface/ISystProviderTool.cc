@@ -68,7 +68,8 @@ YAML::Node ISystProviderTool::GetParameterHeadersDocument() {
   CheckHaveMetaData();
 
   YAML::Node ParamHeadersDoc;
-  std::vector<std::string> HeaderKeys;
+  YAML::Node HeaderKeys(YAML::NodeType::Sequence);
+  HeaderKeys.SetStyle(YAML::EmitterStyle::Flow);
   for (auto &hdr : GetSystMetaData()) {
     ParamHeadersDoc[hdr.prettyName] = SystParamHeaderToYAML(hdr);
     HeaderKeys.push_back(hdr.prettyName);

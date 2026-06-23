@@ -19,9 +19,11 @@ NEW_SYSTTOOLS_EXCEPT(invalid_YAML_random_distribution_descriptor);
 ///
 /// Returns whether any setup occured
 ///
-/// Uses string value of key in `yamlnd` to initialize SystParamHeader variation
+/// Uses the value of key in `yamlnd` to initialize SystParamHeader variation
 /// datamembers for a few common uses. YAML examples (two equivalent styles
-/// are supported: flattened per-parameter keys, or nested parameter maps):
+/// are supported: flattened per-parameter keys, or nested parameter maps).
+/// The variation descriptor may be provided either as a legacy scalar string
+/// descriptor, or directly as a YAML numeric sequence for discrete points:
 ///
 /// 1) New central value
 ///    # flattened
@@ -62,10 +64,14 @@ NEW_SYSTTOOLS_EXCEPT(invalid_YAML_random_distribution_descriptor);
 ///    MyParam_variation_descriptor: "[5,3,1,4]"
 ///    Produces `paramVariations` = {5,3,1,4}
 ///
+///    Equivalent direct YAML sequence form:
+///    MyParam_variation_descriptor: [5, 3, 1, 4]
+///
 /// Notes: The `variation_descriptor` and central-value keys may be provided
 /// as top-level flattened keys ("<name>_central_value", "<name>_variation_descriptor")
-/// or as nested mappings under the parameter name. All descriptors are parsed
-/// from strings and must follow the formats shown above.
+/// or as nested mappings under the parameter name. Scalar descriptors follow
+/// the string formats shown above; direct YAML sequences are accepted for
+/// discrete variation lists.
 ///
 /// throws invalid_YAML_variation_descriptor on error
 bool ParseYAMLVariationDescriptor(YAML::Node const &yamlnd,

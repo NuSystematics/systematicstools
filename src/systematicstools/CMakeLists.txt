@@ -2,6 +2,7 @@ add_subdirectory(interface)
 add_subdirectory(interpreters)
 add_subdirectory(systproviders)
 add_subdirectory(utility)
+add_subdirectory(app)
 
 add_library(systematicstools_all INTERFACE)
 target_link_libraries(systematicstools_all INTERFACE 

@@ -29,7 +29,31 @@ bool ParseYAMLVariationDescriptor(YAML::Node const &yamlnd,
 
   if (has_cv) hdr.centralParamValue = yamlnd[CV_key].as<double>();
   std::string var_descriptor;
-  if (has_var) var_descriptor = yamlnd[vardescriptor_key].as<std::string>();
+  YAML::Node var_node;
+  if (has_var) {
+    var_node = yamlnd[vardescriptor_key];
+    if (var_node.IsScalar()) {
+      var_descriptor = var_node.as<std::string>();
+    } else if (var_node.IsSequence()) {
+      hdr.paramVariations = var_node.as<std::vector<double>>();
+      hdr.isRandomlyThrown = false;
+      hdr.isSplineable = false;
+
+      if (hdr.paramVariations.size() == 1) {
+        hdr.centralParamValue = hdr.paramVariations.front();
+        hdr.isCorrection = true;
+      } else if (hdr.paramVariations.empty()) {
+        throw invalid_YAML_variation_descriptor()
+            << "[ERROR]: variation_descriptor sequence was provided, but it "
+               "contained no parameter variations.";
+      }
+      return true;
+    } else {
+      throw invalid_YAML_variation_descriptor()
+          << "[ERROR]: variation_descriptor must be either a scalar string "
+             "descriptor or a numeric YAML sequence.";
+    }
+  }
 
   trim(var_descriptor);
 

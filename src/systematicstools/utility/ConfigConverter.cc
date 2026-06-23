@@ -1,5 +1,6 @@
 #include "systematicstools/utility/ConfigConverter.hh"
 #include "fhiclcpp/ParameterSetWalker.h"
+#include <cctype>
 #include <sstream>
 #include <string>
 
@@ -67,6 +68,44 @@ std::string FormatScalar(YAML::Node const &scalar) {
   return quoteString(token);
 }
 
+std::string DecodeFHiCLStringToken(std::string const &value) {
+  if (value.size() < 2) {
+    return value;
+  }
+
+  char quote = value.front();
+  if ((quote != '"' && quote != '\'') || value.back() != quote) {
+    return value;
+  }
+
+  std::string out;
+  out.reserve(value.size() - 2);
+
+  for (std::size_t idx = 1; idx + 1 < value.size(); ++idx) {
+    char c = value[idx];
+    if (c == '\\' && idx + 1 < value.size() - 1) {
+      char next = value[++idx];
+      switch (next) {
+        case '\\': out.push_back('\\'); break;
+        case '"': out.push_back('"'); break;
+        case '\'': out.push_back('\''); break;
+        case 'b': out.push_back('\b'); break;
+        case 'f': out.push_back('\f'); break;
+        case 'n': out.push_back('\n'); break;
+        case 'r': out.push_back('\r'); break;
+        case 't': out.push_back('\t'); break;
+        default:
+          out.push_back(next);
+          break;
+      }
+      continue;
+    }
+    out.push_back(c);
+  }
+
+  return out;
+}
+
 std::string BuildFHiCLText(YAML::Node const &node) {
   if (node.IsScalar()) {
     return FormatScalar(node);
@@ -127,9 +166,11 @@ public:
     YAML::Node &container = container_stack_.back();
     if (container.IsSequence()) {
       container.push_back(YAML::Node(YAML::NodeType::Sequence));
+      container[container.size() - 1].SetStyle(YAML::EmitterStyle::Flow);
       container_stack_.push_back(container[container.size() - 1]);
     } else {
       container[key] = YAML::Node(YAML::NodeType::Sequence);
+      container[key].SetStyle(YAML::EmitterStyle::Flow);
       container_stack_.push_back(container[key]);
     }
   }
@@ -153,7 +194,7 @@ public:
 private:
   void assignAtom(YAML::Node node, any_t const &value) {
     if (value.type() == typeid(std::string)) {
-      node = std::any_cast<std::string>(value);
+      node = DecodeFHiCLStringToken(std::any_cast<std::string>(value));
     } else if (value.type() == typeid(int)) {
       node = std::any_cast<int>(value);
     } else if (value.type() == typeid(unsigned int)) {
@@ -179,7 +220,7 @@ private:
 
   void appendToSequence(YAML::Node &sequence, any_t const &value) {
     if (value.type() == typeid(std::string)) {
-      sequence.push_back(std::any_cast<std::string>(value));
+      sequence.push_back(DecodeFHiCLStringToken(std::any_cast<std::string>(value)));
     } else if (value.type() == typeid(int)) {
       sequence.push_back(std::any_cast<int>(value));
     } else if (value.type() == typeid(unsigned int)) {

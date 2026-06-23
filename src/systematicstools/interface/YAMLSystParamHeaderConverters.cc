@@ -114,8 +114,10 @@ YAML::Node SystParamHeaderToYAML(SystParamHeader const &sph) {
     yaml["isSplineable"] = sph.isSplineable;
   if (sph.isRandomlyThrown)
     yaml["isRandomlyThrown"] = sph.isRandomlyThrown;
-  if (!sph.paramVariations.empty())
+  if (!sph.paramVariations.empty()) {
     yaml["paramVariations"] = sph.paramVariations;
+    yaml["paramVariations"].SetStyle(YAML::EmitterStyle::Flow);
+  }
   if (sph.isResponselessParam)
     yaml["isResponselessParam"] = sph.isResponselessParam;
   if (sph.responseParamId != kParamUnhandled<paramId_t>)
