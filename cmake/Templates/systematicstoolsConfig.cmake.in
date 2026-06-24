@@ -1,18 +1,21 @@
 @PACKAGE_INIT@
 
 set(systematicstools_VERSION @PROJECT_VERSION@)
+set(systtools_BUILD_FHICLCPP @systtools_BUILD_FHICLCPP@)
 
 find_package(ROOT 6.10 REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
-# fhiclcpp is optional. Try the system package first; if absent and the
-# caller set systtools_BUILD_FHICLCPP, try the standalone build that was
-# fetched at build time. Either way the target is fhiclcpp::fhiclcpp.
+# fhiclcpp is optional. Normalize whichever package was found so the exported
+# targets can always refer to fhiclcpp::standalone.
 find_package(fhiclcpp QUIET)
+if(TARGET fhiclcpp::fhiclcpp AND NOT TARGET fhiclcpp::standalone)
+  add_library(fhiclcpp::standalone ALIAS fhiclcpp::fhiclcpp)
+endif()
 if(NOT fhiclcpp_FOUND)
   if(systtools_BUILD_FHICLCPP)
-    find_package(fhiclcppstandalone QUIET)
-    if(fhiclcppstandalone_FOUND)
+    include(${CMAKE_CURRENT_LIST_DIR}/../fhicl_cpp_standalone/fhicl_cpp_standaloneConfig.cmake OPTIONAL)
+    if(TARGET fhiclcpp::standalone AND NOT TARGET fhiclcpp::fhiclcpp)
       add_library(fhiclcpp::fhiclcpp ALIAS fhicl_cpp_standalone)
       set(fhiclcpp_FOUND TRUE)
     endif()
