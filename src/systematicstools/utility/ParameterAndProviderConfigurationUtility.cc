@@ -9,16 +9,16 @@
 
 namespace systtools {
 
-param_header_map_t BuildParameterHeaders(YAML::Node const &paramset,
+param_header_map_t BuildParameterHeaders(YAML::Node const &yamlnd,
                                          std::string const &key) {
 
   param_header_map_t headers;
 
   // Foreach provider block
-  YAML::Node provider_keys = paramset[key];
+  YAML::Node provider_keys = yamlnd[key];
   for (auto const &provkeyNode : provider_keys) {
     std::string provkey = provkeyNode.as<std::string>();
-    YAML::Node provider_cfg = paramset[provkey];
+    YAML::Node provider_cfg = yamlnd[provkey];
 
     std::string provname = provider_cfg["tool_type"].as<std::string>();
     if (provider_cfg["instance_name"]) {

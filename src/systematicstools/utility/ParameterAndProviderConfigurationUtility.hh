@@ -25,7 +25,7 @@ NEW_SYSTTOOLS_EXCEPT(ISystProvider_FQName_collision);
 /// Used by standalone interpreters to read response interpretation metadata
 /// from input YAML
 param_header_map_t
-BuildParameterHeaders(YAML::Node const &paramset,
+BuildParameterHeaders(YAML::Node const &yamlnd,
                       std::string const &key = "syst_providers");
 
 ///\brief Builds map of SystProvider instances and handled parameters from a
@@ -51,7 +51,7 @@ param_header_map_t BuildParameterHeaders(
 ///\brief Configures the set of ISystProviders from a Tool Configuration
 /// document.
 ///
-/// Some structure over the paramset is neccessary (and is described in
+/// Some structure over the yamlnd is neccessary (and is described in
 /// systematicstools/doc/ToolConfiguration.md ), but the YAML document passed
 /// to InstanceBuild is tool sub-class-specific. This is as opposed to
 /// ConfigureISystProvidersFromParameterHeaders which requires a rigidly
@@ -64,7 +64,7 @@ param_header_map_t BuildParameterHeaders(
 /// art, other instantiators must be used.
 template <typename T = systtools::ISystProviderTool>
 std::vector<std::unique_ptr<T>> ConfigureISystProvidersFromToolConfig(
-  YAML::Node const &paramset,
+  YAML::Node const &yamlnd,
   std::function<std::unique_ptr<T>(YAML::Node const &)> InstanceBuilder,
   std::string const &key = "syst_providers", paramId_t syst_param_id = 0) {
 
@@ -76,9 +76,9 @@ std::vector<std::unique_ptr<T>> ConfigureISystProvidersFromToolConfig(
 
   std::vector<std::unique_ptr<T>> providers;
 
-  for (auto const &provkey : paramset[key]) {
+  for (auto const &provkey : yamlnd[key]) {
     // Get YAML config for provider
-    YAML::Node provider_cfg = paramset[provkey.as<std::string>()];
+    YAML::Node provider_cfg = yamlnd[provkey.as<std::string>()];
 
     // Make an instance of the plugin
     std::unique_ptr<T> is = InstanceBuilder(provider_cfg);
@@ -111,7 +111,7 @@ std::vector<std::unique_ptr<T>> ConfigureISystProvidersFromToolConfig(
 ///\brief Configures the set of ISystProviders from a Parameter Headers
 /// document.
 ///
-/// The structure of paramset must adhere to the Parameter Headers structure
+/// The structure of yamlnd must adhere to the Parameter Headers structure
 /// described in systematicstools/doc/ParameterHeaders.md
 ///
 /// The InstanceBuilder function argument is used to instantiate
@@ -121,15 +121,15 @@ std::vector<std::unique_ptr<T>> ConfigureISystProvidersFromToolConfig(
 /// art, other instantiators must be used.
 template <typename T = systtools::ISystProviderTool>
 std::vector<std::unique_ptr<T>> ConfigureISystProvidersFromParameterHeaders(
-  YAML::Node const &paramset,
+  YAML::Node const &yamlnd,
   std::function<std::unique_ptr<T>(YAML::Node const &)> InstanceBuilder,
   std::string const &key = "syst_providers") {
 
   std::vector<std::unique_ptr<T>> providers;
 
-  for (auto const &provkey : paramset[key]) {
+  for (auto const &provkey : yamlnd[key]) {
     // Get YAML config for provider
-    YAML::Node provider_cfg = paramset[provkey.as<std::string>()];
+    YAML::Node provider_cfg = yamlnd[provkey.as<std::string>()];
 
     // Make an instance of the plugin
     std::unique_ptr<T> is = InstanceBuilder(provider_cfg);
