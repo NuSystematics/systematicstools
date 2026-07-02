@@ -12,22 +12,25 @@ namespace systtools {
 
 SystParamHeader YAMLToSystParamHeader(YAML::Node const &yamlnd) {
 
-  static std::vector<std::string> allowed_keys = {"prettyName",
-                                                  "systParamId",
-                                                  "isWeightSystematicVariation",
-                                                  "unitsAreNatural",
-                                                  "differsEventByEvent",
-                                                  "centralParamValue",
-                                                  "isCorrection",
-                                                  "oneSigmaShifts",
-                                                  "paramValidityRange",
-                                                  "isSplineable",
-                                                  "isRandomlyThrown",
-                                                  "paramVariations",
-                                                  "isResponselessParam",
-                                                  "responseParamId",
-                                                  "responses",
-                                                  "opts"};
+  // Member variables of SystParamHeader should be listed below
+  static std::vector<std::string> allowed_keys = {
+    "prettyName",
+    "systParamId",
+    "isWeightSystematicVariation",
+    "unitsAreNatural",
+    "differsEventByEvent",
+    "centralParamValue",
+    "isCorrection",
+    "oneSigmaShifts",
+    "paramValidityRange",
+    "isSplineable",
+    "isRandomlyThrown",
+    "paramVariations",
+    "isResponselessParam",
+    "responseParamId",
+    "responses",
+    "opts"
+  };
 
   if (!yamlnd.IsMap()) {
     throw invalid_SystParamHeader_key()

@@ -19,6 +19,8 @@ NEW_SYSTTOOLS_EXCEPT(invalid_SystParamHeader_key);
 
 ///\brief Deserializes a SystParamHeader instance from a passed YAML parameter
 /// set.
+///
+/// This function takes a ParamherHeader YAML and outputs an actual SystParamHeader object 
 SystParamHeader YAMLToSystParamHeader(YAML::Node const &yamlnd);
 
 ///\brief Serializes a SyhstParamHeader instance to a YAML node.
