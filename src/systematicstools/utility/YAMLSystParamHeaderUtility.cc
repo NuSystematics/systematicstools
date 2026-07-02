@@ -34,36 +34,29 @@ bool ParseYAMLVariationDescriptor(YAML::Node const &yamlnd,
     var_node = yamlnd[vardescriptor_key];
     if (var_node.IsScalar()) {
       var_descriptor = var_node.as<std::string>();
-    } else if (var_node.IsSequence()) {
-      hdr.paramVariations = var_node.as<std::vector<double>>();
-      hdr.isRandomlyThrown = false;
-      hdr.isSplineable = false;
-
-      if (hdr.paramVariations.size() == 1) {
-        hdr.centralParamValue = hdr.paramVariations.front();
-        hdr.isCorrection = true;
-      } else if (hdr.paramVariations.empty()) {
-        throw invalid_YAML_variation_descriptor()
-            << "[ERROR]: variation_descriptor sequence was provided, but it "
-               "contained no parameter variations.";
-      }
-      return true;
     } else {
       throw invalid_YAML_variation_descriptor()
-          << "[ERROR]: variation_descriptor must be either a scalar string "
-             "descriptor or a numeric YAML sequence.";
+          << "[ERROR]: variation_descriptor must be a scalar string "
+             "descriptor, for example \"[-3, -2, -1, 1, 2, 3]\".";
     }
   }
 
   trim(var_descriptor);
 
   // 1) When "variation_descriptor" is provided
+  //    Also, this must be given as a string
   if (var_descriptor.size()) {
+    // Check the first letter; [ or {
     char fchar = var_descriptor.front();
+    // Removing brackets
     std::string var_descriptor_trimmed =
         var_descriptor.substr(1, var_descriptor.length() - 2);
     trim(var_descriptor_trimmed);
-    if (fchar == '(') { // Spline knots
+
+    // The variation is given as (start, end, step)
+    // E.g.,
+    // DIALNAME_variation_descriptor: "(-3, 3, 1)"
+    if (fchar == '(') {
       std::vector<double> range_step_values =
           ParseToVect<double>(var_descriptor_trimmed, ",");
       if (range_step_values.size() != 3) {
@@ -79,10 +72,19 @@ bool ParseYAMLVariationDescriptor(YAML::Node const &yamlnd,
         hdr.paramVariations.push_back(hdr.paramVariations.back() +
                                       range_step_values[2]);
       }
-      hdr.isSplineable = true;
-    } else if (fchar == '[') { // Discrete tweaks
+    }
+    // Variation is given as discrete tweaks
+    // E.g.,
+    // DIALNAME_variation_descriptor: "[-3, -2, -1, 0, 1, 2, 3]"
+    else if (fchar == '[') {
       hdr.paramVariations = ParseToVect<double>(var_descriptor_trimmed, ",");
-    } else if (fchar == '{') { // OneSigmaShifts
+    }
+    // Multisim is requested
+    // E.g., 
+    // DIALNAME_nthrows: 100
+    // DIALNAME_random_distribution: "gaussian"
+    // DIALNAME_variation_descriptor: "{-1, 1}" # or {1}, then assumes symmetric
+    else if (fchar == '{') { // OneSigmaShifts
       std::vector<double> sigShifts =
           ParseToVect<double>(var_descriptor_trimmed, ",");
       if (sigShifts.size() == 1) {
@@ -103,9 +105,16 @@ bool ParseYAMLVariationDescriptor(YAML::Node const &yamlnd,
     } else {
       throw invalid_YAML_variation_descriptor()
           << "[ERROR]: Found tweak definition " << std::quoted(var_descriptor)
-          << ", but expected to find either, \"{sigma_low_natural_units, "
-             "sigma_up_natural_units}\" or \"[spline knot 1, spline knot "
-             "2, spline knot 3,...]\"";
+          << ", but should be one of below:\n\n"
+          << "1) (START, END, STEP)\n"
+          << "DIALNAME_variation_descriptor: \"(-3, 3, 1)\"\n"
+          << "2) [List of values]\n"
+          << "DIALNAME_variation_descriptor: \"[-3, -2, -1, 0, 1, 2, 3]\"\n"
+          << "3) Multisim\n"
+          << "DIALNAME_nthrows: 100\n"
+          << "DIALNAME_random_distribution: \"gaussian\"\n"
+          << "DIALNAME_variation_descriptor: \"{-1, 1}\n";
+
     }
 
     // If there is only one variation, set isCorrection to true.
@@ -214,6 +223,9 @@ bool ParseYAMLToolConfigurationParameter(
     YAML::Node const &yamlnd, std::string const &parameter_name,
     SystParamHeader &hdr, uint64_t seed, size_t NThrows) {
 
+  hdr.prettyName = parameter_name;
+
+  // 1) central_value and variation descriptor
   std::string CV_key = parameter_name + "_central_value";
   std::string Tweak_key = parameter_name + "_variation_descriptor";
 
@@ -221,18 +233,19 @@ bool ParseYAMLToolConfigurationParameter(
     return false;
   }
 
-  // override isSplineable if specified
+  // 2) Random throw for multisim
+  std::string NThrows_key = parameter_name + "_nthrows";
+  std::string RandDist_key = parameter_name + "_random_distribution";
+  MakeYAMLDefinedRandomVariations(yamlnd, NThrows_key, hdr, RandDist_key,
+                                   seed, NThrows);
+
+  // Some overriding..
+  // 1) isSplineable
   if( yamlnd[parameter_name + "_isSplineable"] ) {
     hdr.isSplineable = yamlnd[parameter_name + "_isSplineable"].as<bool>();
   }
+  // 2) 
 
-  hdr.prettyName = parameter_name;
-
-  std::string NThrows_key = parameter_name + "_nthrows";
-  std::string RandDist_key = parameter_name + "_random_distribution";
-
-  MakeYAMLDefinedRandomVariations(yamlnd, NThrows_key, hdr, RandDist_key,
-                                   seed, NThrows);
 
   return true;
 }
