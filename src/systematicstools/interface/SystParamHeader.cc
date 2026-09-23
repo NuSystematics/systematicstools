@@ -22,12 +22,12 @@ bool Validate(SystParamHeader const &hdr, bool quiet) {
     return false;
   }
   if (hdr.isCorrection) {
-    if (hdr.centralParamValue == kDefaultDouble) {
+    if (hdr.centralParamValue == kDefaultDouble && hdr.paramVariations.size()!=1) {
       if (!quiet) {
         std::cout << "[ERROR]: SystParamHeader(" << hdr.systParamId << ":"
                   << std::quoted(hdr.prettyName)
-                  << ") is marked as a correction but the centralParamValue is "
-                     "defaulted."
+                  << ") is marked as a correction, but the centralParamValue is "
+                     "defaulted and more than one variations are given."
                   << std::endl;
       }
       return false;
