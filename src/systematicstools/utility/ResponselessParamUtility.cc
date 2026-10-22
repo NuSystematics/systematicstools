@@ -1,13 +1,15 @@
 #include "systematicstools/utility/ResponselessParamUtility.hh"
 
 #include "systematicstools/interface/ISystProviderTool.hh"
+#include "systematicstools/utility/YAMLSystParamHeaderUtility.hh"
 
 #include <iomanip>
 
 namespace systtools {
 
 void FinalizeAndValidateDependentParameters(
-    SystMetaData &metadata, std::string const &response_parameter_name,
+    SystMetaData &metadata, YAML::Node const &yamlnd,
+    std::string const &response_parameter_name,
     std::vector<std::string> const &dependent_parameter_names) {
 
   uint64_t NVariations = 0;
@@ -35,6 +37,8 @@ void FinalizeAndValidateDependentParameters(
       }
     }
   }
+
+  ParseYAMLWeightLimits(yamlnd, resp_hdr);
 
   resp_hdr.paramVariations.clear();
   for (size_t i = 0; i < NVariations; ++i) {

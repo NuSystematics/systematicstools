@@ -29,6 +29,8 @@ SystParamHeader YAMLToSystParamHeader(YAML::Node const &yamlnd) {
     "isResponselessParam",
     "responseParamId",
     "responses",
+    "weightMin",
+    "weightMax",
     "opts"
   };
 
@@ -79,6 +81,10 @@ SystParamHeader YAMLToSystParamHeader(YAML::Node const &yamlnd) {
     sph.responseParamId = yamlnd["responseParamId"].as<paramId_t>();
   if (yamlnd["responses"])
     sph.responses = yamlnd["responses"].as<std::vector<double>>();
+  if (yamlnd["weightMin"])
+    sph.weightMin = yamlnd["weightMin"].as<double>();
+  if (yamlnd["weightMax"])
+    sph.weightMax = yamlnd["weightMax"].as<double>();
   if (yamlnd["opts"])
     sph.opts = yamlnd["opts"].as<std::vector<std::string>>();
 
@@ -127,6 +133,10 @@ YAML::Node SystParamHeaderToYAML(SystParamHeader const &sph) {
     yaml["responseParamId"] = sph.responseParamId;
   if (!sph.responses.empty())
     yaml["responses"] = sph.responses;
+  if (sph.weightMin != kWeightMin)
+    yaml["weightMin"] = sph.weightMin;
+  if (sph.weightMax != kWeightMax)
+    yaml["weightMax"] = sph.weightMax;
   if (!sph.opts.empty())
     yaml["opts"] = sph.opts;
 

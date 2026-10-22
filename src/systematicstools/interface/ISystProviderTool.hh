@@ -8,6 +8,7 @@
 
 #include "yaml-cpp/yaml.h"
 
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -89,6 +90,28 @@ public:
   /// Checks that the headers have been built/loaded with CheckHaveMetaData,
   /// which throws if they haven't.
   SystMetaData const &GetSystMetaData() const;
+
+  ///\brief Clamps w to [hdr.weightMin, hdr.weightMax].
+  static double ClampWeight(SystParamHeader const &hdr, double w) {
+    return std::clamp(w, hdr.weightMin, hdr.weightMax);
+  }
+
+  ///\brief Clamps every response of the weight-type parameters in resp to
+  /// the [weightMin, weightMax] of their header in this tool's metadata.
+  ///
+  /// Responses for unhandled or lateral-shift parameters are left unchanged.
+  void ClampWeightResponses(event_unit_response_t &resp) const;
+
+  ///\brief Clamps the weights of the weight-type parameters in resp to the
+  /// [weightMin, weightMax] of their header in this tool's metadata.
+  ///
+  /// Both the nominal weight, CV_response, and the variation weights,
+  /// CV_response * responses[i], end up within the limits:
+  ///   CV_new = clamp(CV_raw)
+  ///   responses[i] = clamp(CV_raw * responses[i]) / CV_new
+  ///
+  /// Entries whose raw or clamped CV_response is zero are left unchanged.
+  void ClampWeightResponses(event_unit_response_w_cv_t &resp) const;
 
   ///\brief Build the Parameter Headers YAML document that can be used to
   /// re-configure an instance of this tool via ConfigureFromParameterHeaders

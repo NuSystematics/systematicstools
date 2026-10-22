@@ -89,6 +89,13 @@ bool MakeYAMLDefinedRandomVariations(YAML::Node const &yamlnd,
                                     std::string const &distribution_key = "",
                                     uint64_t seed = 0, size_t NThrows = 0);
 
+///\brief Sets hdr.weightMin/weightMax from the tool-level "WeightMin" and
+/// "WeightMax" keys of yamlnd, then, if parameter_name is given, from the
+/// per-parameter "<parameter_name>_WeightMin"/"<parameter_name>_WeightMax"
+/// keys. Keys that are absent leave the header value unchanged.
+void ParseYAMLWeightLimits(YAML::Node const &yamlnd, SystParamHeader &hdr,
+                           std::string const &parameter_name = "");
+
 ///\brief Checks if yamlnd appears to provide standardized Tool Configuration
 /// for a named parameter
 ///
@@ -102,6 +109,11 @@ bool YAMLToolConfigurationParameterExists(
 /// write Tool Configuration files.
 ///
 /// Returns if parameter configuation keys were found.
+///
+/// Weight limits (weightMin/weightMax) are read from the tool-level
+/// "WeightMin"/"WeightMax" keys, and may be overridden per parameter with
+/// "<parameter_name>_WeightMin"/"<parameter_name>_WeightMax" (see
+/// ParseYAMLWeightLimits).
 ///
 bool ParseYAMLToolConfigurationParameter(
     YAML::Node const &yamlnd, std::string const &parameter_name,

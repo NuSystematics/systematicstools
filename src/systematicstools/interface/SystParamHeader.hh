@@ -26,6 +26,10 @@ constexpr double const kDefaultDouble = 0xdeadbeef;
 template <typename T> T kParamUnhandled = std::numeric_limits<T>::max();
 template <> inline constexpr double const kParamUnhandled<double> = kDefaultDouble;
 
+/// Default weight clamp limits, i.e. no clamping.
+constexpr double const kWeightMin = -std::numeric_limits<double>::infinity();
+constexpr double const kWeightMax = std::numeric_limits<double>::infinity();
+
 /// Exception to be thrown when a SystParamHeader fails Validate
 /// N.B. It is not thrown by the validate method upon failure, but should be
 /// thrown by calling methods that cannot handle invalid SystParamHeaders.
@@ -57,7 +61,7 @@ struct SystParamHeader {
         paramValidityRange{{kDefaultDouble, kDefaultDouble}},
         isSplineable{true}, isRandomlyThrown{false}, paramVariations{},
         isResponselessParam{false}, responseParamId{kParamUnhandled<paramId_t>},
-        responses{}, opts{} {}
+        responses{}, weightMin{kWeightMin}, weightMax{kWeightMax}, opts{} {}
 
   ///\brief Human readable systematic parameter name
   std::string prettyName;
@@ -151,6 +155,13 @@ struct SystParamHeader {
   /// These will most often be used for overall event-class re-normalisations,
   /// which do not need to be stored event-by-event.
   std::vector<double> responses;
+
+  ///\brief Limits that weight responses of this parameter are clamped to.
+  ///
+  /// Default to kWeightMin/kWeightMax (-inf/+inf), i.e. no clamping. Only
+  /// meaningful when `isWeightSystematicVariation == true`.
+  double weightMin;
+  double weightMax;
 
   ///\brief Arbitrary string options stored in the metadata for further
   /// `ISystProviderTool` configuration.

@@ -202,6 +202,27 @@ bool MakeYAMLDefinedRandomVariations(YAML::Node const &yamlnd,
   return true;
 }
 
+void ParseYAMLWeightLimits(YAML::Node const &yamlnd, SystParamHeader &hdr,
+                           std::string const &parameter_name) {
+  // Tool-level WeightMin/WeightMax apply to every parameter of the tool
+  if (yamlnd["WeightMin"]) {
+    hdr.weightMin = yamlnd["WeightMin"].as<double>();
+  }
+  if (yamlnd["WeightMax"]) {
+    hdr.weightMax = yamlnd["WeightMax"].as<double>();
+  }
+  if (parameter_name.empty()) {
+    return;
+  }
+  // DIALNAME_WeightMin/DIALNAME_WeightMax override them for one parameter
+  if (yamlnd[parameter_name + "_WeightMin"]) {
+    hdr.weightMin = yamlnd[parameter_name + "_WeightMin"].as<double>();
+  }
+  if (yamlnd[parameter_name + "_WeightMax"]) {
+    hdr.weightMax = yamlnd[parameter_name + "_WeightMax"].as<double>();
+  }
+}
+
 bool YAMLToolConfigurationParameterExists(
     YAML::Node const &yamlnd, std::string const &parameter_name) {
 
@@ -239,8 +260,8 @@ bool ParseYAMLToolConfigurationParameter(
   if( yamlnd[parameter_name + "_isSplineable"] ) {
     hdr.isSplineable = yamlnd[parameter_name + "_isSplineable"].as<bool>();
   }
-  // 2) 
-
+  // 2) Weight limits
+  ParseYAMLWeightLimits(yamlnd, hdr, parameter_name);
 
   return true;
 }
