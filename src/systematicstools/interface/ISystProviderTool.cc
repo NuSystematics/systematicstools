@@ -63,6 +63,46 @@ SystMetaData const &ISystProviderTool::GetSystMetaData() const{
   return fSystMetaData;
 }
 
+void ISystProviderTool::ClampWeightResponses(
+    event_unit_response_t &resp) const {
+  SystMetaData const &md = GetSystMetaData();
+  for (ParamResponses &pr : resp) {
+    if (!HasParam(md, pr.pid)) {
+      continue;
+    }
+    SystParamHeader const &hdr = GetParam(md, pr.pid);
+    if (!hdr.isWeightSystematicVariation) {
+      continue;
+    }
+    for (double &w : pr.responses) {
+      w = ClampWeight(hdr, w);
+    }
+  }
+}
+
+void ISystProviderTool::ClampWeightResponses(
+    event_unit_response_w_cv_t &resp) const {
+  SystMetaData const &md = GetSystMetaData();
+  for (VarAndCVResponse &vr : resp) {
+    if (!HasParam(md, vr.pid)) {
+      continue;
+    }
+    SystParamHeader const &hdr = GetParam(md, vr.pid);
+    if (!hdr.isWeightSystematicVariation) {
+      continue;
+    }
+    double const CV_raw = vr.CV_response;
+    double const CV_new = ClampWeight(hdr, CV_raw);
+    if (CV_raw == 0 || CV_new == 0) {
+      continue;
+    }
+    for (double &w : vr.responses) {
+      w = ClampWeight(hdr, CV_raw * w) / CV_new;
+    }
+    vr.CV_response = CV_new;
+  }
+}
+
 YAML::Node ISystProviderTool::GetParameterHeadersDocument() {
 
   CheckHaveMetaData();

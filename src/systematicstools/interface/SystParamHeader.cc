@@ -45,6 +45,16 @@ bool Validate(SystParamHeader const &hdr, bool quiet) {
     }
   }
 
+  if (!(hdr.weightMin <= hdr.weightMax)) {
+    if (!quiet) {
+      std::cout << "[ERROR]: SystParamHeader(" << hdr.systParamId << ":"
+                << std::quoted(hdr.prettyName) << ") has weightMin ("
+                << hdr.weightMin << ") larger than weightMax ("
+                << hdr.weightMax << ")." << std::endl;
+    }
+    return false;
+  }
+
   if (hdr.isSplineable) { // Splineable
     if (hdr.isRandomlyThrown) {
       if (!quiet) {
